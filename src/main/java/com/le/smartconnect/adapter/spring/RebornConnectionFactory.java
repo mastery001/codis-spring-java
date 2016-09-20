@@ -1,4 +1,4 @@
-package org.reborndb.adapter.spring;
+package com.le.smartconnect.adapter.spring;
 
 import org.reborndb.reborn.RoundRobinJedisPool;
 import org.springframework.dao.DataAccessException;
