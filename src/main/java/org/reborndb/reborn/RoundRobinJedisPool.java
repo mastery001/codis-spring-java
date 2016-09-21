@@ -88,6 +88,8 @@ public class RoundRobinJedisPool implements JedisResourcePool {
     private final boolean closeCurator;
 
     private final PathChildrenCache watcher;
+    
+    private final ThreadLocal<PooledObject> threadPooledObject = new ThreadLocal<PooledObject>();
 
     private static final class PooledObject {
         public final String addr;
@@ -293,11 +295,17 @@ public class RoundRobinJedisPool implements JedisResourcePool {
             int current = nextIdx.get();
             int next = current >= pools.size() - 1 ? 0 : current + 1;
             if (nextIdx.compareAndSet(current, next)) {
-                return pools.get(next).pool.getResource();
+            	PooledObject pooledObject = pools.get(next);
+            	threadPooledObject.set(pooledObject);
+                return pooledObject.pool.getResource();
             }
         }
     }
 
+    public JedisPool currentThreadPool() {
+    	return threadPooledObject.get().pool;
+    }
+    
     @Override
     public void close() {
         try {
