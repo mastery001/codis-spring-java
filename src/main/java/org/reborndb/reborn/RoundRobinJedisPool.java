@@ -99,6 +99,11 @@ public class RoundRobinJedisPool implements JedisResourcePool {
             this.pool = pool;
         }
 
+		@Override
+		public String toString() {
+			return "PooledObject [addr=" + addr + ", pool=" + pool + "]";
+		}
+
     }
 
     private volatile ImmutableList<PooledObject> pools = ImmutableList.of();
@@ -264,11 +269,13 @@ public class RoundRobinJedisPool implements JedisResourcePool {
                     }
                 }
                 builder.add(pool);
+                LOG.info("builder add new pool: " + pool);
             } catch (Exception e) {
                 LOG.warn("parse " + childData.getPath() + " failed", e);
             }
         }
         this.pools = builder.build();
+        LOG.info("all pools: " + this.pools);
         for (PooledObject pool: addr2Pool.values()) {
             LOG.info("Remove proxy: " + pool.addr);
             pool.pool.close();
@@ -279,6 +286,7 @@ public class RoundRobinJedisPool implements JedisResourcePool {
     public Jedis getResource() {
         ImmutableList<PooledObject> pools = this.pools;
         if (pools.isEmpty()) {
+        	LOG.error("Proxy list empty , this pools is " + this.pools);
             throw new JedisException("Proxy list empty");
         }
         for (;;) {

@@ -41,7 +41,7 @@ public class RebornConnectionFactory implements RedisConnectionFactory{
 	@Override
 	public RedisConnection getConnection() {
 		Jedis jedis = rebornJedisPool.getResource();
-		RebornConnection connection = new RebornConnection(jedis, rebornJedisPool, dbIndex);
+		RebornConnection connection = new RebornConnection(jedis, dbIndex);
 		connection.setConvertPipelineAndTxResults(convertPipelineAndTxResults);
 		return postProcessConnection(connection);
 	}
