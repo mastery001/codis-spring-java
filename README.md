@@ -13,11 +13,11 @@
 1. see [Reborn-java](https://github.com/reborndb/reborn-java)
 2. spring-data-redis xml config
 ```xml
-	<bean id="xxx" class="com.le.smartconnect.adapter.spring.RebornConnectionFactory" lazy-init="true">
+	<bean id="xxx" class="com.le.smartconnect.adapter.spring.RebornConnectionFactory">
 		<constructor-arg name="rebornJedisPool" ref="rebornPool" />
 	</bean>
 	
-	<bean id="rebornPool" class="org.reborndb.reborn.RoundRobinJedisPool" lazy-init="true" >
+	<bean id="rebornPool" class="org.reborndb.reborn.RoundRobinJedisPool" >
 		<constructor-arg name="zkAddr" value="${redis.zk.con}" />
 		<constructor-arg name="zkSessionTimeoutMs" value="${redis.zk.timeout}" />
 		<constructor-arg name="zkPath" value="${redis.zk.path}" />
