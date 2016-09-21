@@ -1,18 +1,28 @@
-#Reborn-java - Java client for RebornDB
-Reborn-java is a java client for RebornDB built on [Jodis](https://github.com/wandoulabs/codis/tree/master/extern/jodis) which is implemented by [Apache9](https://github.com/Apache9).
+# Codis/RebornDB Introduction
+
+- [Codis](https://github.com/CodisLabs/codis)
+- [RebornDB](https://github.com/reborndb/reborn)
+
 
 ##Features
-- Use a round robin policy to balance load to multiple reborn-proxies.
-- Detect proxy online and offline automatically.
+- Support Reborn-java client
+- Support Spring-data-redis connection
 
 ##How to use
 
-```java
-JedisResourcePool jedisPool = new RoundRobinJedisPool("zkserver:2181", 30000, "/zk/reborn/db_xxx/proxy", new JedisPoolConfig());
-try (Jedis jedis = jedisPool.getResource()) {
-    jedis.set("foo", "bar");
-    String value = jedis.get("foo");
-}
+1. see [Reborn-java](https://github.com/reborndb/reborn-java)
+2. spring-data-redis xml config
+```xml
+	<bean id="xxx" class="com.le.smartconnect.adapter.spring.RebornConnectionFactory" lazy-init="true">
+		<constructor-arg name="rebornJedisPool" ref="rebornPool" />
+	</bean>
+	
+	<bean id="rebornPool" class="org.reborndb.reborn.RoundRobinJedisPool" lazy-init="true" >
+		<constructor-arg name="zkAddr" value="${redis.zk.con}" />
+		<constructor-arg name="zkSessionTimeoutMs" value="${redis.zk.timeout}" />
+		<constructor-arg name="zkPath" value="${redis.zk.path}" />
+		<constructor-arg name="poolConfig" ref="jedisPoolConfig" />
+	</bean>
 ```
 
 ##Note
