@@ -35,6 +35,8 @@ import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.log4j.Logger;
@@ -109,12 +111,16 @@ public class RoundRobinJedisPool implements JedisResourcePool {
     }
 
     private volatile ImmutableList<PooledObject> pools = ImmutableList.of();
+    
+    private ImmutableList<PooledObject> changePools;
 
     private final AtomicInteger nextIdx = new AtomicInteger(-1);
 
     private final JedisPoolConfig poolConfig;
 
     private final int timeout;
+    
+    private volatile ConnectionState currentConnectionState;
 
     /**
      * Create a RoundRobinJedisPool with default timeout.
@@ -211,6 +217,13 @@ public class RoundRobinJedisPool implements JedisResourcePool {
         this.timeout = timeout;
         this.curatorClient = curatorClient;
         this.closeCurator = closeCurator;
+        curatorClient.getConnectionStateListenable().addListener(new ConnectionStateListener() {
+			
+			@Override
+			public void stateChanged(CuratorFramework client, ConnectionState newState) {
+				currentConnectionState = newState;
+			}
+		});
         watcher = new PathChildrenCache(curatorClient, zkPath, true);
         watcher.getListenable().addListener(new PathChildrenCacheListener() {
 
@@ -243,7 +256,7 @@ public class RoundRobinJedisPool implements JedisResourcePool {
     }
 
     private void resetPools() {
-        ImmutableList<PooledObject> pools = this.pools;
+        ImmutableList<PooledObject> pools = this.changePools;
         Map<String, PooledObject> addr2Pool = Maps.newHashMapWithExpectedSize(pools.size());
         for (PooledObject pool: pools) {
             addr2Pool.put(pool.addr, pool);
@@ -276,15 +289,23 @@ public class RoundRobinJedisPool implements JedisResourcePool {
                 LOG.warn("parse " + childData.getPath() + " failed", e);
             }
         }
-        this.pools = builder.build();
-        LOG.info("all pools: " + this.pools);
+        this.changePools = builder.build();
+        changeForCurrentPool();
         for (PooledObject pool: addr2Pool.values()) {
             LOG.info("Remove proxy: " + pool.addr);
             pool.pool.close();
         }
     }
 
-    @Override
+    private void changeForCurrentPool() {
+    	// if zk connection is CONNECTED or RECONNECTED , compare pools and copyPools
+    	if(currentConnectionState == ConnectionState.CONNECTED || currentConnectionState == ConnectionState.RECONNECTED) {
+    		pools = changePools;
+    	}
+    	LOG.info("all pools: " + this.pools);
+	}
+
+	@Override
     public Jedis getResource() {
         ImmutableList<PooledObject> pools = this.pools;
         if (pools.isEmpty()) {
