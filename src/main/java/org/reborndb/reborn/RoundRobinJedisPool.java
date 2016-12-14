@@ -112,7 +112,7 @@ public class RoundRobinJedisPool implements JedisResourcePool {
 
     private volatile ImmutableList<PooledObject> pools = ImmutableList.of();
     
-    private ImmutableList<PooledObject> changePools;
+    private ImmutableList<PooledObject> changePools = pools;
 
     private final AtomicInteger nextIdx = new AtomicInteger(-1);
 
